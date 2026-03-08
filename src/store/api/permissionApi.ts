@@ -1,15 +1,18 @@
-import type { APIResponse } from "../../types/common.type";
+import type { APIResponse, PageResponse } from "../../types/common.type";
 import type { PermissionResponse } from "../../types/permission.type";
 import { baseApi } from "./baseApi";
 
 export const permissionApi = baseApi.injectEndpoints({
     endpoints: (builder) => ({
-        getPermissions: builder.query<APIResponse<PermissionResponse[]>, void>({
-            query: () => "/permissions/list",
+        getPermissions: builder.query<APIResponse<PageResponse<PermissionResponse>>, { page?: number; size?: number; keyword?: string; sort?: string }>({
+            query: ({ page = 1, size = 10, keyword = "", sort = "" }) => ({
+                url: "/permissions/list",
+                params: { page, size, keyword, sort }
+            }),
             providesTags: (result) =>
-                result?.data
+                result?.data?.data
                     ? [
-                        ...result.data.map(({ name }) => ({ type: "Permissions" as const, id: name })),
+                        ...result.data.data.map(({ id }) => ({ type: "Permissions" as const, id })),
                         { type: "Permissions", id: "LIST" },
                       ]
                     : [{ type: "Permissions", id: "LIST" }],
@@ -24,13 +27,25 @@ export const permissionApi = baseApi.injectEndpoints({
             invalidatesTags: [{ type: "Permissions", id: "LIST" }],
         }),
 
-        deletePermission: builder.mutation<APIResponse<void>, string>({
-            query: (name) => ({
-                url: `/permissions/delete/${name}`,
+        updatePermission: builder.mutation<APIResponse<PermissionResponse>, { id: number; body: { name: string; description: string } }>({
+            query: ({ id, body }) => ({
+                url: `/permissions/update/${id}`,
+                method: "PUT",
+                body,
+            }),
+            invalidatesTags: (_result, _error, { id }) => [
+                { type: "Permissions", id },
+                { type: "Permissions", id: "LIST" },
+            ],
+        }),
+
+        deletePermission: builder.mutation<APIResponse<void>, number>({
+            query: (id) => ({
+                url: `/permissions/delete/${id}`,
                 method: "DELETE",
             }),
-            invalidatesTags: (_result, _error, name) => [
-                { type: "Permissions", id: name },
+            invalidatesTags: (_result, _error, id) => [
+                { type: "Permissions", id },
                 { type: "Permissions", id: "LIST" },
             ],
         }),
@@ -40,5 +55,6 @@ export const permissionApi = baseApi.injectEndpoints({
 export const {
     useGetPermissionsQuery,
     useCreatePermissionMutation,
+    useUpdatePermissionMutation,
     useDeletePermissionMutation,
 } = permissionApi;

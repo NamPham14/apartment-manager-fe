@@ -5,7 +5,6 @@ export const store = configureStore({
   reducer: {
     // Đăng ký reducer của baseApi
     [baseApi.reducerPath]: baseApi.reducer,
-    // Bạn có thể thêm các slice khác ở đây (ví dụ: auth slice)
   },
   // Middleware của RTK Query là bắt buộc để hỗ trợ cache, invalidation, polling, và các tính năng khác
   middleware: (getDefaultMiddleware) =>

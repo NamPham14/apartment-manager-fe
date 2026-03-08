@@ -63,7 +63,23 @@ export const invoiceApi = baseApi.injectEndpoints({
             ]
         }),
 
+        generateInvoices: builder.mutation<APIResponse<void>, { month: number; year: number }>({
+            query: ({ month, year }) => ({
+                url: "/invoices/generate-monthly",
+                method: "POST",
+                params: { month, year },
+            }),
+            invalidatesTags: [{ type: "Invoices", id: "LIST" }],
+        }),
+
     })
 })
 
-export const {useGetInvoiceByIdQuery,useLazyGetInvoicesQuery, useCreateInvoiceMutation,useUpdateInvoiceMutation,useDeleteInvoiceMutation} = invoiceApi
+export const {
+    useGetInvoiceByIdQuery,
+    useGetInvoicesQuery, 
+    useCreateInvoiceMutation,
+    useUpdateInvoiceMutation,
+    useDeleteInvoiceMutation,
+    useGenerateInvoicesMutation
+} = invoiceApi;

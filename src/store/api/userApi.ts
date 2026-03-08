@@ -71,3 +71,5 @@ export const {
     useGetMyInfoQuery,
     useChangePasswordMutation,
 } = userApi;
+
+export { useInactiveAccountMutation as useDeleteUserMutation };

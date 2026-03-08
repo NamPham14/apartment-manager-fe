@@ -4,6 +4,7 @@ import type { PermissionResponse } from "./permission.type";
 
 
 export interface RoleResponse {
+  id: number;
   name: string;
   description: string;
   permissions: PermissionResponse[];

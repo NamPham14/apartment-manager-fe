@@ -7,5 +7,6 @@ export interface TenantResponse {
   citizenId: string;
   email: string;
   permanentAddress: string;
+  avatar?: string;
 }
 export type TenantPageResponse = APIResponse<PageResponse<TenantResponse>>;

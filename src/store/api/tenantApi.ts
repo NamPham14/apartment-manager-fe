@@ -1,11 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-
-
 import type { APIResponse } from "../../types/common.type";
 import type { TenantPageResponse, TenantResponse } from "../../types/tenant.type";
 import { baseApi } from "./baseApi";
-
-
 
 export const tenantApi = baseApi.injectEndpoints({
     endpoints: (builder) => ({
@@ -28,29 +24,32 @@ export const tenantApi = baseApi.injectEndpoints({
                
         }),
 
-
         getTenantById: builder.query<APIResponse<TenantResponse>, number>({
             query:(id) => `/tenants/${id}`,
             providesTags:(result, error, id) => [{type:"Tenants",id}],
         }),
 
-        createTenant: builder.mutation<APIResponse<TenantResponse>,TenantResponse>({
-            query:(body) => ({url:"/tenants/create",method:"POST",body}),
+        createTenant: builder.mutation<APIResponse<TenantResponse>, FormData>({
+            query:(formData) => ({
+                url:"/tenants/create",
+                method:"POST",
+                body: formData
+            }),
             invalidatesTags:[{type:"Tenants",id:'LIST'}]
         }),
 
-        updateTenant: builder.mutation<APIResponse<void>, TenantResponse>({
-            query:(body) => ({
-                url:"/tenants/update",
-                method:'PUT',
-                body
+        updateTenant: builder.mutation<APIResponse<void>, FormData>({
+            query: (formData) => ({
+                url: "/tenants/update",
+                method: 'PUT',
+                body: formData
             }),
-            invalidatesTags:(result, error, arg) => [
-                {type:"Tenants", id:arg.id},
-                {type:"Tenants", id:"LIST"}
-            ],
-            
+            invalidatesTags: (result, error, arg) => {
+                // Lấy ID từ FormData (nếu có thể) hoặc invalidate LIST
+                return [{ type: "Tenants", id: "LIST" }];
+            },
         }),
+
 
         deleteTenant: builder.mutation<APIResponse<void>,number>({
             query:(id) => ({url:`/tenants/delete/${id}`,method:'DELETE'}),

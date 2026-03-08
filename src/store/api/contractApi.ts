@@ -59,4 +59,4 @@ export const contractApi = baseApi.injectEndpoints({
     })
 })
 
-export const {useCreateContractMutation, useDeleteContractMutation,useGetContractByIdQuery,useGetContractsQuery} = contractApi;
+export const {useCreateContractMutation, useUpdateContractMutation, useDeleteContractMutation,useGetContractByIdQuery,useGetContractsQuery} = contractApi;

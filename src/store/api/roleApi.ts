@@ -1,21 +1,25 @@
-import type { APIResponse } from "../../types/common.type";
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import type { APIResponse, PageResponse } from "../../types/common.type";
 import type { RoleResponse } from "../../types/role.type";
 import { baseApi } from "./baseApi";
 
 export const roleApi = baseApi.injectEndpoints({
     endpoints: (builder) => ({
-        getRoles: builder.query<APIResponse<RoleResponse[]>, void>({
-            query: () => "/roles/list",
+        getRoles: builder.query<APIResponse<PageResponse<RoleResponse>>, { page?: number; size?: number; keyword?: string; sort?: string }>({
+            query: ({ page = 1, size = 10, keyword = "", sort = "" }) => ({
+                url: "/roles/list",
+                params: { page, size, keyword, sort },
+            }),
             providesTags: (result) =>
-                result?.data
+                result?.data?.data
                     ? [
-                        ...result.data.map(({ name }) => ({ type: "Roles" as const, id: name })),
+                        ...result.data.data.map(({ id }) => ({ type: "Roles" as const, id })),
                         { type: "Roles", id: "LIST" },
                       ]
                     : [{ type: "Roles", id: "LIST" }],
         }),
 
-        createRole: builder.mutation<APIResponse<RoleResponse>, { name: string; description: string; permissions: string[] }>({
+        createRole: builder.mutation<APIResponse<RoleResponse>, any>({
             query: (body) => ({
                 url: "/roles/create",
                 method: "POST",
@@ -24,25 +28,25 @@ export const roleApi = baseApi.injectEndpoints({
             invalidatesTags: [{ type: "Roles", id: "LIST" }],
         }),
 
-        updateRole: builder.mutation<APIResponse<RoleResponse>, { roleName: string; body: { description: string; permissions: string[] } }>({
-            query: ({ roleName, body }) => ({
-                url: `/roles/update/${roleName}`,
+        updateRole: builder.mutation<APIResponse<RoleResponse>, { id: number; body: any }>({
+            query: ({ id, body }) => ({
+                url: `/roles/update/${id}`,
                 method: "PUT",
                 body,
             }),
-            invalidatesTags: (_result, _error, { roleName }) => [
-                { type: "Roles", id: roleName },
+            invalidatesTags: (_result, _error, { id }) => [
+                { type: "Roles", id },
                 { type: "Roles", id: "LIST" },
             ],
         }),
 
-        deleteRole: builder.mutation<APIResponse<void>, string>({
-            query: (roleName) => ({
-                url: `/roles/delete/${roleName}`,
+        deleteRole: builder.mutation<APIResponse<void>, number>({
+            query: (id) => ({
+                url: `/roles/delete/${id}`,
                 method: "DELETE",
             }),
-            invalidatesTags: (_result, _error, roleName) => [
-                { type: "Roles", id: roleName },
+            invalidatesTags: (_result, _error, id) => [
+                { type: "Roles", id },
                 { type: "Roles", id: "LIST" },
             ],
         }),

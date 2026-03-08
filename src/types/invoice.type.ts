@@ -13,6 +13,10 @@ export interface InvoiceResponse {
   amountWater: number;
   amountServices: number;
   amountTotal: number;
+  oldElectricityIndex?: number;
+  newElectricityIndex?: number;
+  oldWaterIndex?: number;
+  newWaterIndex?: number;
   status: InvoiceStatus;
   dueDate: string;
   paymentDate?: string;
