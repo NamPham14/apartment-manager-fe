@@ -1,5 +1,4 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { Toaster } from 'react-hot-toast';
+import { createBrowserRouter, Navigate, RouterProvider } from 'react-router-dom';
 import AuthPage from './pages/AuthPage';
 import DashBoardPage from './pages/DashBoardPage';
 import RoomPage from './pages/RoomPage';
@@ -13,38 +12,79 @@ import PermissionPage from './pages/PermissionPage';
 import SettingsPage from './pages/SettingsPage';
 import ProfilePage from './pages/ProfilePage';
 import MainLayout from './components/MainLayout';
+import { useAuth } from './hooks/useAuth';
+import PublicRoute from './components/auth/PublicRoute';
+import ProtectedRoute from './components/auth/ProtectedRoute';
+import Forbidden from './pages/auth/Forbidden';
+import NotFound from './pages/auth/NotFound';
+
+
+function RootRedirect() {
+  const { isAuthenticated } = useAuth();
+  if (!isAuthenticated) return <Navigate to={"/auth/login"} />;
+  return <Navigate to={"/dashboard"} />;
+}
+const router = createBrowserRouter([
+  {
+    path: "/",
+    element: <RootRedirect />,
+  },
+ 
+  {
+        path: "/auth",
+        element: <PublicRoute />,
+        children: [
+          { path: "login", element: <AuthPage /> },
+        ],
+      },
+    
+  
+  {
+    element: <ProtectedRoute />,
+    children: [
+      {
+        element: <MainLayout />,
+        children: [
+          { path: '/dashboard', element: <DashBoardPage /> },
+          { path: '/rooms', element: <RoomPage /> },
+          { path: '/tenants', element: <TenantPage /> },
+          { path: '/users', element: <UserPage /> },
+          { path: '/contracts', element: <ContractPage /> },
+          { path: '/invoices', element: <InvoicePage /> },
+          { path: '/measures', element: <MeasurePage /> },
+          { path: '/roles', element: <RolePage /> },
+          { path: '/permissions', element: <PermissionPage /> },
+          { path: '/settings', element: <SettingsPage /> },
+          { path: '/profile', element: <ProfilePage /> },
+          // Redirect mặc định trong app
+          { path: '/', element: <Navigate to="/dashboard" replace /> },
+        ],
+      },
+    ],
+  },
+ {
+    path: "/forbidden",
+    element: <Forbidden />,
+  },
+  {
+    path: "*",
+    element: <NotFound />,
+  },
+]);
+
+
+
+import { Toaster } from 'react-hot-toast';
 
 function App() {
+   
   return (
-    <Router>
+    <>
       <Toaster position="bottom-right" reverseOrder={false} />
-      <Routes>
-        {/* Auth Route */}
-        <Route path="/login" element={<AuthPage />} />
-        
-        {/* App Routes with MainLayout */}
-        <Route element={<MainLayout />}>
-          <Route path="/dashboard" element={<DashBoardPage />} />
-          <Route path="/rooms" element={<RoomPage />} />
-          <Route path="/tenants" element={<TenantPage />} />
-          <Route path="/users" element={<UserPage />} />
-          <Route path="/contracts" element={<ContractPage />} />
-          <Route path="/invoices" element={<InvoicePage />} />
-          <Route path="/measures" element={<MeasurePage />} />
-          <Route path="/roles" element={<RolePage />} />
-          <Route path="/permissions" element={<PermissionPage />} />
-          <Route path="/settings" element={<SettingsPage />} />
-          <Route path="/profile" element={<ProfilePage />} />
-          
-          {/* Redirect to dashboard by default */}
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
-        </Route>
-
-        {/* Fallback */}
-        <Route path="*" element={<Navigate to="/dashboard" replace />} />
-      </Routes>
-    </Router>
+      <RouterProvider router={router}/>
+    </>
   );
+  
 }
 
 export default App;

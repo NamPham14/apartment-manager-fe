@@ -149,13 +149,16 @@ export default function RolePage() {
         onConfirm={doDelete}
       />
 
-      <RoleModal 
-        isOpen={modalOpen}
-        mode={modalMode}
-        selected={selected}
-        onClose={closeModal}
-        onSubmit={modalMode === 'add' ? doCreate : doUpdate}
-      />
+      {modalOpen && (
+        <RoleModal 
+          key={selected?.id || 'new'}
+          isOpen={modalOpen}
+          mode={modalMode}
+          selected={selected}
+          onClose={closeModal}
+          onSubmit={modalMode === 'add' ? doCreate : doUpdate}
+        />
+      )}
     </>
   );
 }

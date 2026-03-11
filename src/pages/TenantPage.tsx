@@ -183,6 +183,7 @@ export default function TenantPage() {
       />
 
       <TenantModal 
+        key={modalOpen ? (selected?.id || 'new') : 'closed'}
         isOpen={modalOpen}
         mode={modalMode}
         selected={selected}

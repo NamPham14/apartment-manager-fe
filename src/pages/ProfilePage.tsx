@@ -1,4 +1,5 @@
-import React, { useEffect, useState, useRef } from 'react';
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import React, {useState, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { useGetMyInfoQuery, useUpdateUserMutation, useChangePasswordMutation } from '../store/api/userApi';
 import { User, Mail, Phone, Shield, Camera, Save, Loader2, KeyRound, CheckCircle2 } from 'lucide-react';
@@ -9,25 +10,22 @@ export default function ProfilePage() {
   const [updateUser, { isLoading: isUpdating }] = useUpdateUserMutation();
   const [changePassword, { isLoading: isChangingPwd }] = useChangePasswordMutation();
   
-  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [previewOverride, setPreviewOverride] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const { register: regProfile, handleSubmit: handleProfileSubmit, reset: resetProfile } = useForm();
-  const { register: regPwd, handleSubmit: handlePwdSubmit, reset: resetPwd, watch } = useForm();
+  const { register: regProfile, handleSubmit: handleProfileSubmit } = useForm({
+    values: userData?.data ? {
+      id: userData.data.id,
+      username: userData.data.username,
+      email: userData.data.email,
+      phone: userData.data.phone,
+      fullName: (userData.data.firstName || '') + (userData.data.lastName || '')
+    } : undefined
+  });
+  const { register: regPwd, handleSubmit: handlePwdSubmit, reset: resetPwd } = useForm();
 
-  useEffect(() => {
-    if (userData?.data) {
-      resetProfile({
-        id: userData.data.id,
-        username: userData.data.username,
-        email: userData.data.email,
-        phone: userData.data.phone,
-        fullName: userData.data.fullName
-      });
-      setAvatarPreview(userData.data.avatar || null);
-    }
-  }, [userData, resetProfile]);
+  const avatarPreview = previewOverride || userData?.data?.avatar || null;
 
   const onProfileSubmit = async (data: any) => {
     try {
@@ -65,7 +63,7 @@ export default function ProfilePage() {
     if (e.target.files?.[0]) {
       const file = e.target.files[0];
       setSelectedFile(file);
-      setAvatarPreview(URL.createObjectURL(file));
+      setPreviewOverride(URL.createObjectURL(file));
     }
   };
 
@@ -106,7 +104,7 @@ export default function ProfilePage() {
               <input type="file" className="hidden" ref={fileInputRef} onChange={handleFileChange} accept="image/*" />
             </div>
             
-            <h2 className="text-xl font-bold text-white">{userData?.data?.fullName || userData?.data?.username}</h2>
+            <h2 className="text-xl font-bold text-white">{userData?.data?.username || userData?.data?.username}</h2>
             <p className="text-xs text-gray-500 font-bold uppercase tracking-widest mt-1">
               {userData?.data?.roles?.[0]?.name || 'Member'}
             </p>

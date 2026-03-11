@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import type { APIResponse } from "../../types/common.type";
 import type { TenantPageResponse, TenantResponse } from "../../types/tenant.type";

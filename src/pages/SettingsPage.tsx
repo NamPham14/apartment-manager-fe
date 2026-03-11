@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { useGetSettingsQuery, useUpdateSettingsMutation } from '../store/api/settingApi';
@@ -8,13 +9,9 @@ export default function SettingsPage() {
   const { data: settingsData, isLoading } = useGetSettingsQuery();
   const [updateSettings, { isLoading: isUpdating }] = useUpdateSettingsMutation();
   
-  const { register, handleSubmit, reset } = useForm();
-
-  useEffect(() => {
-    if (settingsData?.data) {
-      reset(settingsData.data);
-    }
-  }, [settingsData, reset]);
+  const { register, handleSubmit } = useForm({
+    values: settingsData?.data
+  });
 
   const onSubmit = async (data: any) => {
     try {

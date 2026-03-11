@@ -13,6 +13,8 @@ import {
   ChevronRight,
   Building2
 } from 'lucide-react';
+import { useSelector } from "react-redux";
+import type { RootState } from "../store/store";
 
 interface SidebarProps {
   isCollapsed: boolean;
@@ -22,18 +24,18 @@ interface SidebarProps {
 }
 
 const MENU_ITEMS = [
-  { id: 'nav-dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-  { id: 'nav-permissions', icon: ShieldCheck, label: 'Permission Manager' },
-  { id: 'nav-roles', icon: Users2, label: 'Role Manager' },
-  { id: 'nav-tenants', icon: UserCheck, label: 'Tenant Manager' }
+  { id: 'nav-dashboard', icon: LayoutDashboard, label: 'Dashboard', requiredPermission: 'DASHBOARD_VIEW' },
+  { id: 'nav-permissions', icon: ShieldCheck, label: 'Permission Manager', requiredPermission: 'ROLE_MANAGE' },
+  { id: 'nav-roles', icon: Users2, label: 'Role Manager', requiredPermission: 'ROLE_MANAGE' },
+  { id: 'nav-tenants', icon: UserCheck, label: 'Tenant Manager', requiredPermission: 'TENANT_VIEW' }
 ];
 
 const OPERATION_ITEMS = [
-  { id: 'nav-measures', icon: Ruler, label: 'Measure Manager' },
-  { id: 'nav-users', icon: UserCog, label: 'User Manager' },
-  { id: 'nav-rooms', icon: DoorOpen, label: 'Room Manager' },
-  { id: 'nav-contracts', icon: FileText, label: 'Contract Manager' },
-  { id: 'nav-invoices', icon: Receipt, label: 'Invoice Manager' }
+  { id: 'nav-measures', icon: Ruler, label: 'Measure Manager', requiredPermission: 'MEASURE_VIEW' },
+  { id: 'nav-users', icon: UserCog, label: 'User Manager', requiredPermission: 'USER_VIEW' },
+  { id: 'nav-rooms', icon: DoorOpen, label: 'Room Manager', requiredPermission: 'ROOM_VIEW' },
+  { id: 'nav-contracts', icon: FileText, label: 'Contract Manager', requiredPermission: 'CONTRACT_VIEW' },
+  { id: 'nav-invoices', icon: Receipt, label: 'Invoice Manager', requiredPermission: 'INVOICE_VIEW' }
 ];
 
 export const Sidebar: React.FC<SidebarProps> = ({ 
@@ -42,72 +44,66 @@ export const Sidebar: React.FC<SidebarProps> = ({
   activeItem,
   setActiveItem
 }) => {
+  const user = useSelector((state: RootState) => state.auth.user);
+
+  // Hàm kiểm tra quyền trực tiếp trong Sidebar
+  const checkHasPermission = (permissionName: string) => {
+    if (!user) return false;
+    if (user.roles?.some(r => r.name === 'ADMIN')) return true;
+    return user.roles?.some(role => 
+      role.permissions?.some(p => p.name === permissionName)
+    );
+  };
+
+  const filteredMenuItems = MENU_ITEMS.filter(item => 
+    !item.requiredPermission || checkHasPermission(item.requiredPermission)
+  );
+
+  const filteredOperationItems = OPERATION_ITEMS.filter(item => 
+    !item.requiredPermission || checkHasPermission(item.requiredPermission)
+  );
+
+  if (filteredMenuItems.length === 0 && filteredOperationItems.length === 0) return null;
+
   return (
-    <aside className={`${
-      isCollapsed ? 'w-20' : 'w-64'
-    } bg-[#141414] border-r border-[#2d2d2d] flex flex-col transition-all duration-300 ease-in-out z-30 h-screen sticky top-0 hidden md:flex`}>
-      {/* Logo Section */}
+    <aside className={`${isCollapsed ? 'w-20' : 'w-64'} bg-[#141414] border-r border-[#2d2d2d] flex flex-col transition-all duration-300 ease-in-out z-30 h-screen sticky top-0 hidden md:flex`}>
       <div className="h-16 flex items-center px-6 border-b border-[#2d2d2d]">
-        <div 
-          onClick={() => setActiveItem('nav-dashboard')}
-          className="flex items-center gap-2 group cursor-pointer overflow-hidden"
-        >
+        <div onClick={() => setActiveItem('nav-dashboard')} className="flex items-center gap-2 group cursor-pointer overflow-hidden">
           <div className="min-w-8 h-8 bg-[#FF9500] rounded-lg flex items-center justify-center shadow-[0_0_15px_rgba(255,149,0,0.3)]">
             <Building2 className="text-white w-5 h-5" />
           </div>
-          {!isCollapsed && (
-            <span className="font-bold text-lg tracking-tight whitespace-nowrap text-white">
-              Rent<span className="text-[#FF9500]">Dash</span>
-            </span>
-          )}
+          {!isCollapsed && <span className="font-bold text-lg tracking-tight whitespace-nowrap text-white">Rent<span className="text-[#FF9500]">Dash</span></span>}
         </div>
       </div>
 
-      {/* Menu Items */}
       <div className="flex-1 overflow-y-auto custom-scrollbar py-6 space-y-1">
-        <p className="px-6 text-[10px] font-semibold text-gray-500 uppercase tracking-widest mb-4 truncate">
-          {isCollapsed ? '•••' : 'Main Menu'}
-        </p>
-        {MENU_ITEMS.map(item => (
-          <button
-            key={item.id}
-            onClick={() => setActiveItem(item.id)}
-            className={`flex items-center px-6 py-3 gap-3 text-sm font-medium transition-all group w-full ${
-              activeItem === item.id
-                ? 'bg-[#FF9500]/10 border-r-4 border-[#FF9500] text-[#FF9500]'
-                : 'text-gray-400 hover:text-[#FF9500] hover:bg-[#FF9500]/5'
-            }`}
-          >
-            <item.icon className="w-5 h-5 min-w-5" />
-            {!isCollapsed && <span className="truncate">{item.label}</span>}
-          </button>
-        ))}
+        {filteredMenuItems.length > 0 && (
+          <>
+            <p className="px-6 text-[10px] font-semibold text-gray-500 uppercase tracking-widest mb-4 truncate">{isCollapsed ? '•••' : 'Main Menu'}</p>
+            {filteredMenuItems.map(item => (
+              <button key={item.id} onClick={() => setActiveItem(item.id)} className={`flex items-center px-6 py-3 gap-3 text-sm font-medium transition-all group w-full ${activeItem === item.id ? 'bg-[#FF9500]/10 border-r-4 border-[#FF9500] text-[#FF9500]' : 'text-gray-400 hover:text-[#FF9500] hover:bg-[#FF9500]/5'}`}>
+                <item.icon className="w-5 h-5 min-w-5" />
+                {!isCollapsed && <span className="truncate">{item.label}</span>}
+              </button>
+            ))}
+          </>
+        )}
 
-        <p className="px-6 text-[10px] font-semibold text-gray-500 uppercase tracking-widest mt-8 mb-4 truncate">
-          {isCollapsed ? '•••' : 'Operations'}
-        </p>
-        {OPERATION_ITEMS.map(item => (
-          <button
-            key={item.id}
-            onClick={() => setActiveItem(item.id)}
-            className={`flex items-center px-6 py-3 gap-3 text-sm font-medium transition-all group w-full ${
-              activeItem === item.id
-                ? 'bg-[#FF9500]/10 border-r-4 border-[#FF9500] text-[#FF9500]'
-                : 'text-gray-400 hover:text-[#FF9500] hover:bg-[#FF9500]/5'
-            }`}
-          >
-            <item.icon className="w-5 h-5 min-w-5" />
-            {!isCollapsed && <span className="truncate">{item.label}</span>}
-          </button>
-        ))}
+        {filteredOperationItems.length > 0 && (
+          <>
+            <p className="px-6 text-[10px] font-semibold text-gray-500 uppercase tracking-widest mt-8 mb-4 truncate">{isCollapsed ? '•••' : 'Operations'}</p>
+            {filteredOperationItems.map(item => (
+              <button key={item.id} onClick={() => setActiveItem(item.id)} className={`flex items-center px-6 py-3 gap-3 text-sm font-medium transition-all group w-full ${activeItem === item.id ? 'bg-[#FF9500]/10 border-r-4 border-[#FF9500] text-[#FF9500]' : 'text-gray-400 hover:text-[#FF9500] hover:bg-[#FF9500]/5'}`}>
+                <item.icon className="w-5 h-5 min-w-5" />
+                {!isCollapsed && <span className="truncate">{item.label}</span>}
+              </button>
+            ))}
+          </>
+        )}
       </div>
 
-      {/* Collapse Button */}
       <div className="p-4 border-t border-[#2d2d2d]">
-        <button
-          onClick={() => setCollapsed(!isCollapsed)}
-          className="w-full flex items-center justify-center p-2 rounded-lg bg-[#1a1a1a] hover:bg-[#2d2d2d] transition-colors text-gray-400"
-        >
+        <button onClick={() => setCollapsed(!isCollapsed)} className="w-full flex items-center justify-center p-2 rounded-lg bg-[#1a1a1a] hover:bg-[#2d2d2d] transition-colors text-gray-400">
           {isCollapsed ? <ChevronRight className="w-5 h-5" /> : <ChevronLeft className="w-5 h-5" />}
         </button>
       </div>

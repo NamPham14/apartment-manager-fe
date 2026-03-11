@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { 
   Home, 
   Activity,
@@ -19,6 +20,18 @@ import {
   ResponsiveContainer,
   Cell
 } from 'recharts';
+
+const CustomTooltip = ({ active, payload }: any) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-[#1a1a1a] border border-[#2d2d2d] p-3 rounded-xl shadow-2xl backdrop-blur-md">
+          <p className="text-[10px] font-bold text-gray-500 uppercase mb-1">{payload[0].payload.month}</p>
+          <p className="text-sm font-black text-[#FF9500]">{payload[0].value.toLocaleString()} đ</p>
+        </div>
+      );
+    }
+    return null;
+  };
 
 export default function DashBoardPage() {
   const navigate = useNavigate();
@@ -50,17 +63,7 @@ export default function DashBoardPage() {
     { label: 'Unpaid Invoices', value: unpaidInvoices, sub: 'Action required', icon: AlertCircle, color: 'text-red-500', bg: 'bg-red-500/10', path: '/invoices' },
   ];
 
-  const CustomTooltip = ({ active, payload }: any) => {
-    if (active && payload && payload.length) {
-      return (
-        <div className="bg-[#1a1a1a] border border-[#2d2d2d] p-3 rounded-xl shadow-2xl backdrop-blur-md">
-          <p className="text-[10px] font-bold text-gray-500 uppercase mb-1">{payload[0].payload.month}</p>
-          <p className="text-sm font-black text-[#FF9500]">{payload[0].value.toLocaleString()} đ</p>
-        </div>
-      );
-    }
-    return null;
-  };
+  
 
   return (
     <>

@@ -2,7 +2,10 @@ import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { Sidebar } from '../components/Sidebar';
 import { User, Settings, LogOut, ChevronDown } from 'lucide-react';
-import { useGetMyInfoQuery } from '../store/api/userApi';
+import { useGetMyInfoQuery, useLogoutMutation } from '../store/api/baseApi';
+import { useDispatch } from 'react-redux';
+import { logout } from '../store/authSlice';
+import toast from 'react-hot-toast';
 
 export default function MainLayout() {
   const [isCollapsed, setCollapsed] = useState(false);
@@ -10,8 +13,12 @@ export default function MainLayout() {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const location = useLocation();
   const navigate = useNavigate();
+  const dispatch = useDispatch();
 
-  const { data: userData } = useGetMyInfoQuery();
+  const { data: userData } = useGetMyInfoQuery(undefined, {
+    pollingInterval: 30000, // Tự động làm mới mỗi 30 giây để cập nhật quyền
+  });
+  const [logoutApi] = useLogoutMutation();
 
   // Mapping URL path to Sidebar ID
   const activeItem = useMemo(() => {
@@ -57,10 +64,16 @@ export default function MainLayout() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const handleLogout = () => {
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
-    navigate('/login');
+  const handleLogout = async () => {
+    try {
+      await logoutApi().unwrap();
+    } catch (error) {
+      console.error('Logout failed:', error);
+    } finally {
+      dispatch(logout());
+      navigate('/auth/login');
+      toast.success('Signed out successfully');
+    }
   };
 
   const userInitial = userData?.data?.username?.substring(0, 2).toUpperCase() || 'AD';
@@ -90,7 +103,7 @@ export default function MainLayout() {
               className="flex items-center gap-3 pl-2 pr-1 py-1 rounded-2xl hover:bg-[#1a1a1a] transition-all border border-transparent hover:border-[#2d2d2d] group"
             >
               <div className="flex flex-col text-right hidden sm:flex">
-                 <span className="text-xs font-bold text-white group-hover:text-[#FF9500] transition-colors">{userData?.data?.lastName || userData?.data?.username}</span>
+                 <span className="text-xs font-bold text-white group-hover:text-[#FF9500] transition-colors">{userData?.data?.username}</span>
                  <span className="text-[9px] text-gray-500 font-medium uppercase tracking-tighter">{userData?.data?.roles?.[0]?.name}</span>
               </div>
               <div className="w-9 h-9 rounded-xl bg-[#FF9500]/10 border border-[#FF9500]/20 flex items-center justify-center text-[#FF9500] font-black text-xs shadow-lg group-hover:bg-[#FF9500] group-hover:text-black transition-all">
@@ -104,7 +117,7 @@ export default function MainLayout() {
             {isProfileOpen && (
               <div className="absolute right-0 mt-3 w-56 glass-panel rounded-2xl shadow-2xl py-2 z-50 animate-in fade-in zoom-in-95 duration-200 border-[#2d2d2d]">
                 <div className="px-4 py-3 border-b border-[#2d2d2d] mb-1">
-                  <p className="text-xs font-black text-white truncate">{userData?.data?.lastName || 'User Account'}</p>
+                  <p className="text-xs font-black text-white truncate">{userData?.data?.username || 'User Account'}</p>
                   <p className="text-[10px] text-gray-500 truncate mt-0.5">{userData?.data?.email}</p>
                 </div>
                 

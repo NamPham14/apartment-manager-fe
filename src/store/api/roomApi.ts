@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import type { RoomPageResponse, RoomResponse } from "../../types/room.type";
 import { baseApi } from "./baseApi";
 import type { APIResponse } from "../../types/common.type";
@@ -28,8 +29,7 @@ export const roomApi = baseApi.injectEndpoints({
                 url: "/rooms/create",
                 method: "POST",
                 body: formData,
-                // Chú ý: Khi dùng FormData với RTK Query, KHÔNG SET Content-Type header
-                // Browser sẽ tự động set multipart/form-data kèm boundary
+               
             }),
             invalidatesTags: [{ type: "Rooms", id: "LIST" }]
         }),
@@ -41,8 +41,7 @@ export const roomApi = baseApi.injectEndpoints({
                 body: formData,
             }),
             invalidatesTags: (result, error, arg) => {
-                // Chúng ta cần extract ID từ FormData nếu muốn invalidate tag cụ thể
-                // Nhưng đơn giản nhất là invalidate cả LIST
+                
                 return [{ type: "Rooms", id: "LIST" }];
             },
         }),

@@ -5,8 +5,8 @@ interface ToggleBoxProps {
 
 export default function ToggleBox({ onRegister, onLogin }: ToggleBoxProps) {
   return (
-    <div className="toggle-box absolute w-full h-full">
-      <div className="toggle-panel toggle-left absolute w-1/2 h-full text-white flex flex-col justify-center items-center z-[2] left-0">
+    <div className="toggle-box">
+      <div className="toggle-panel toggle-left">
         <h1 className="text-4xl font-bold">Hello, Welcome</h1>
         <p className="my-5 mb-10 text-[14.5px]">Don't have an account?</p>
         <button 
@@ -16,7 +16,7 @@ export default function ToggleBox({ onRegister, onLogin }: ToggleBoxProps) {
           Register
         </button>
       </div>
-      <div className="toggle-panel toggle-right absolute w-1/2 h-full text-white flex flex-col justify-center items-center z-[2] -right-1/2">
+      <div className="toggle-panel toggle-right">
         <h1 className="text-4xl font-bold">Welcome Back!</h1>
         <p className="my-5 mb-10 text-[14.5px]">Already have an account?</p>
         <button 

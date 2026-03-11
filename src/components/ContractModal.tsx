@@ -1,8 +1,11 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { X, Save, Loader2, Home, User, DollarSign, Calendar, Hash } from 'lucide-react';
 import { useGetRoomsQuery } from '../store/api/roomApi';
 import { useGetTenantsQuery } from '../store/api/tenantApi';
+import { contractSchema, type ContractFormData } from '../schemas/contract';
 import type { ContractResponse } from '../types/contract.type';
 
 interface ContractModalProps {
@@ -14,9 +17,29 @@ interface ContractModalProps {
 }
 
 export const ContractModal: React.FC<ContractModalProps> = ({ isOpen, mode, selected, onClose, onSubmit }) => {
-  const { register, handleSubmit, reset, watch, setValue, formState: { isSubmitting } } = useForm();
+  const isEdit = mode === 'edit' && !!selected;
+
+  const { register, handleSubmit, watch, setValue, formState: { isSubmitting, errors } } = useForm<ContractFormData>({
+    resolver: zodResolver(contractSchema),
+    defaultValues: isEdit ? {
+      roomId: selected.room?.id,
+      tenantId: selected.tenantEntity?.id,
+      startDate: selected.startDate,
+      endDate: selected.endDate,
+      rentalPrice: Number(selected.rentalPrice),
+      depositAmount: Number(selected.depositAmount),
+      status: selected.status as any
+    } : { 
+      roomId: 0, 
+      tenantId: 0, 
+      startDate: '', 
+      endDate: '', 
+      rentalPrice: 0, 
+      depositAmount: 0, 
+      status: 'ACTIVE' 
+    }
+  });
   
-  // Lấy danh sách phòng và người thuê để chọn
   const { data: roomsData } = useGetRoomsQuery({ page: 1, size: 100 });
   const { data: tenantsData } = useGetTenantsQuery({ page: 1, size: 100 });
 
@@ -25,37 +48,25 @@ export const ContractModal: React.FC<ContractModalProps> = ({ isOpen, mode, sele
 
   const watchedRoomId = watch('roomId');
 
-  // Tự động điền giá thuê khi chọn phòng
+  // Tự động điền giá thuê khi chọn phòng (Side effect duy nhất được giữ lại)
   useEffect(() => {
-    if (mode === 'add' && watchedRoomId) {
+    if (mode === 'add' && watchedRoomId && watchedRoomId > 0) {
       const selectedRoom = rooms.find(r => r.id === Number(watchedRoomId));
       if (selectedRoom) {
-        setValue('rentalPrice', selectedRoom.basePrice);
+        setValue('rentalPrice', Number(selectedRoom.basePrice));
       }
     }
   }, [watchedRoomId, rooms, mode, setValue]);
 
-  useEffect(() => {
-    if (isOpen) {
-      if (mode === 'edit' && selected) {
-        reset({
-          id: selected.id,
-          code: selected.code,
-          roomId: selected.room?.id,
-          tenantId: selected.tenantEntity?.id,
-          startDate: selected.startDate,
-          endDate: selected.endDate,
-          rentalPrice: selected.rentalPrice,
-          depositAmount: selected.depositAmount,
-          status: selected.status
-        });
-      } else {
-        reset({ code: '', roomId: '', tenantId: '', startDate: '', endDate: '', rentalPrice: '', depositAmount: '', status: 'ACTIVE' });
-      }
-    }
-  }, [isOpen, mode, selected, reset]);
-
   if (!isOpen) return null;
+
+  const onFormSubmit = async (data: ContractFormData) => {
+    await onSubmit({
+      ...data,
+      id: isEdit ? selected?.id : undefined,
+      code: isEdit ? selected?.code : undefined, // Giữ code cũ nếu là edit
+    });
+  };
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
@@ -67,50 +78,74 @@ export const ContractModal: React.FC<ContractModalProps> = ({ isOpen, mode, sele
           </button>
         </div>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="p-6 space-y-6">
-          <div className="space-y-1">
-            <label className="text-xs font-semibold text-gray-500 uppercase tracking-widest px-1 flex items-center gap-2"><Hash size={12}/> Contract Code</label>
-            <input {...register('code')} className="w-full bg-[#0f0f0f] border border-[#2d2d2d] rounded-xl py-2.5 px-4 text-sm text-white focus:border-[#FF9500] outline-none" placeholder="Ex: HD-101 (Leave blank to auto-generate)" />
-          </div>
-
+        <form onSubmit={handleSubmit(onFormSubmit)} className="p-6 space-y-6">
           <div className="grid grid-cols-2 gap-6">
             <div className="space-y-4">
               <div className="space-y-1">
                 <label className="text-xs font-semibold text-gray-500 uppercase tracking-widest px-1 flex items-center gap-2"><Home size={12}/> Room</label>
-                <select {...register('roomId', { required: true })} className="w-full bg-[#0f0f0f] border border-[#2d2d2d] rounded-xl py-2.5 px-4 text-sm text-white focus:border-[#FF9500] outline-none">
-                  <option value="">Select Room...</option>
+                <select 
+                  {...register('roomId', { valueAsNumber: true })} 
+                  className={`w-full bg-[#0f0f0f] border ${errors.roomId ? 'border-red-500/50' : 'border-[#2d2d2d]'} rounded-xl py-2.5 px-4 text-sm text-white focus:border-[#FF9500] outline-none transition-colors`}
+                >
+                  <option value="0">Select Room...</option>
                   {rooms.map(r => (
                     <option key={r.id} value={r.id} disabled={r.status === 'OCCUPIED' && mode === 'add'}>
-                      {r.name} - {r.basePrice.toLocaleString()} VNĐ {r.status === 'OCCUPIED' ? '(Occupied)' : ''}
+                      {r.name} - {Number(r.basePrice).toLocaleString()} VNĐ {r.status === 'OCCUPIED' ? '(Occupied)' : ''}
                     </option>
                   ))}
                 </select>
+                {errors.roomId && <p className="text-red-500 text-[10px] font-bold uppercase px-1">{errors.roomId.message}</p>}
               </div>
               <div className="space-y-1">
                 <label className="text-xs font-semibold text-gray-500 uppercase tracking-widest px-1 flex items-center gap-2"><User size={12}/> Tenant</label>
-                <select {...register('tenantId', { required: true })} className="w-full bg-[#0f0f0f] border border-[#2d2d2d] rounded-xl py-2.5 px-4 text-sm text-white focus:border-[#FF9500] outline-none">
-                  <option value="">Select Tenant...</option>
+                <select 
+                  {...register('tenantId', { valueAsNumber: true })} 
+                  className={`w-full bg-[#0f0f0f] border ${errors.tenantId ? 'border-red-500/50' : 'border-[#2d2d2d]'} rounded-xl py-2.5 px-4 text-sm text-white focus:border-[#FF9500] outline-none transition-colors`}
+                >
+                  <option value="0">Select Tenant...</option>
                   {tenants.map(t => <option key={t.id} value={t.id}>{t.fullName} ({t.phone})</option>)}
                 </select>
+                {errors.tenantId && <p className="text-red-500 text-[10px] font-bold uppercase px-1">{errors.tenantId.message}</p>}
               </div>
               <div className="space-y-1">
                 <label className="text-xs font-semibold text-gray-500 uppercase tracking-widest px-1 flex items-center gap-2"><DollarSign size={12}/> Rental Price</label>
-                <input type="number" {...register('rentalPrice', { required: true })} className="w-full bg-[#0f0f0f] border border-[#2d2d2d] rounded-xl py-2.5 px-4 text-sm text-white focus:border-[#FF9500] outline-none" placeholder="Monthly price" />
+                <input 
+                  type="number" 
+                  {...register('rentalPrice', { valueAsNumber: true })} 
+                  className={`w-full bg-[#0f0f0f] border ${errors.rentalPrice ? 'border-red-500/50' : 'border-[#2d2d2d]'} rounded-xl py-2.5 px-4 text-sm text-white focus:border-[#FF9500] outline-none transition-colors`} 
+                  placeholder="Monthly price" 
+                />
+                {errors.rentalPrice && <p className="text-red-500 text-[10px] font-bold uppercase px-1">{errors.rentalPrice.message}</p>}
               </div>
             </div>
 
             <div className="space-y-4">
               <div className="space-y-1">
                 <label className="text-xs font-semibold text-gray-500 uppercase tracking-widest px-1 flex items-center gap-2"><Calendar size={12}/> Start Date</label>
-                <input type="date" {...register('startDate', { required: true })} className="w-full bg-[#0f0f0f] border border-[#2d2d2d] rounded-xl py-2.5 px-4 text-sm text-white focus:border-[#FF9500] outline-none" />
+                <input 
+                  type="date" 
+                  {...register('startDate')} 
+                  className={`w-full bg-[#0f0f0f] border ${errors.startDate ? 'border-red-500/50' : 'border-[#2d2d2d]'} rounded-xl py-2.5 px-4 text-sm text-white focus:border-[#FF9500] outline-none transition-colors`} 
+                />
+                {errors.startDate && <p className="text-red-500 text-[10px] font-bold uppercase px-1">{errors.startDate.message}</p>}
               </div>
               <div className="space-y-1">
                 <label className="text-xs font-semibold text-gray-500 uppercase tracking-widest px-1 flex items-center gap-2"><Calendar size={12}/> End Date (Optional)</label>
-                <input type="date" {...register('endDate')} className="w-full bg-[#0f0f0f] border border-[#2d2d2d] rounded-xl py-2.5 px-4 text-sm text-white focus:border-[#FF9500] outline-none" />
+                <input 
+                  type="date" 
+                  {...register('endDate')} 
+                  className="w-full bg-[#0f0f0f] border border-[#2d2d2d] rounded-xl py-2.5 px-4 text-sm text-white focus:border-[#FF9500] outline-none" 
+                />
               </div>
               <div className="space-y-1">
                 <label className="text-xs font-semibold text-gray-500 uppercase tracking-widest px-1 flex items-center gap-2"><DollarSign size={12}/> Deposit Amount</label>
-                <input type="number" {...register('depositAmount', { required: true })} className="w-full bg-[#0f0f0f] border border-[#2d2d2d] rounded-xl py-2.5 px-4 text-sm text-white focus:border-[#FF9500] outline-none" placeholder="Security deposit" />
+                <input 
+                  type="number" 
+                  {...register('depositAmount', { valueAsNumber: true })} 
+                  className={`w-full bg-[#0f0f0f] border ${errors.depositAmount ? 'border-red-500/50' : 'border-[#2d2d2d]'} rounded-xl py-2.5 px-4 text-sm text-white focus:border-[#FF9500] outline-none transition-colors`} 
+                  placeholder="Security deposit" 
+                />
+                {errors.depositAmount && <p className="text-red-500 text-[10px] font-bold uppercase px-1">{errors.depositAmount.message}</p>}
               </div>
             </div>
           </div>

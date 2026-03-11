@@ -36,9 +36,9 @@ export const contractApi = baseApi.injectEndpoints({
 
         updateContract: builder.mutation<APIResponse<void>, ContractResponse>({
                query: (body) => ({
-                   url: `/contracts/update`, // Khớp backend (không có ${id} trên URL)
+                   url: `/contracts/update`,
                    method: 'PUT',
-                   body: body // body này phải chứa field id
+                   body: body 
                }),
                invalidatesTags: (result, error, arg) => [
                    {type: "Contracts", id: arg.id}, // Làm mới cái id đang sửa

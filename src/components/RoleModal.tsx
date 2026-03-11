@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react';
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { X, Save, Loader2, CheckSquare, Square } from 'lucide-react';
 import { useGetPermissionsQuery } from '../store/api/permissionApi';
@@ -13,23 +14,18 @@ interface RoleModalProps {
 }
 
 export const RoleModal: React.FC<RoleModalProps> = ({ isOpen, mode, selected, onClose, onSubmit }) => {
-  const { register, handleSubmit, reset, formState: { isSubmitting } } = useForm();
+  const { register, handleSubmit, formState: { isSubmitting } } = useForm({
+    defaultValues: {
+      name: mode === 'edit' && selected ? selected.name : '',
+      description: mode === 'edit' && selected ? selected.description : ''
+    }
+  });
   const { data: permData } = useGetPermissionsQuery({ page: 1, size: 100 });
-  const [selectedPerms, setSelectedPerms] = useState<number[]>([]);
+  const [selectedPerms, setSelectedPerms] = useState<number[]>(
+    mode === 'edit' && selected ? selected.permissions.map(p => p.id) : []
+  );
 
   const permissions = permData?.data?.data || [];
-
-  useEffect(() => {
-    if (isOpen) {
-      if (mode === 'edit' && selected) {
-        reset({ name: selected.name, description: selected.description });
-        setSelectedPerms(selected.permissions.map(p => p.id));
-      } else {
-        reset({ name: '', description: '' });
-        setSelectedPerms([]);
-      }
-    }
-  }, [isOpen, mode, selected, reset]);
 
   const togglePermission = (id: number) => {
     setSelectedPerms(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);

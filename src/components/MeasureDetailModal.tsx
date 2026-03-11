@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Zap, Droplets, Calendar, Home, User, Hash, ArrowUpRight } from 'lucide-react';
+import { X, Zap, Droplets, Calendar, Home, User, Hash } from 'lucide-react';
 import type { MeasureResponse } from '../types/measure.type';
 
 interface MeasureDetailModalProps {

@@ -13,11 +13,9 @@ import {
   Image as ImageIcon, 
   LayoutGrid, 
   List, 
-  MoreVertical,
   Edit2,
   Trash2,
   Eye,
-  Home
 } from 'lucide-react';
 import type { RoomResponse } from '../types/room.type';
 
@@ -285,6 +283,7 @@ export default function RoomPage() {
       )}
 
       <RoomModal 
+        key={modalOpen ? (selected?.id || 'new') : 'closed'}
         isOpen={modalOpen}
         mode={modalMode}
         selected={selected}

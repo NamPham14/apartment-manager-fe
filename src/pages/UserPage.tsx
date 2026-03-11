@@ -175,13 +175,16 @@ export default function UserPage() {
         onConfirm={doDelete}
       />
 
-      <UserModal 
-        isOpen={modalOpen}
-        mode={modalMode}
-        selected={selected}
-        onClose={closeModal}
-        onSubmit={modalMode === 'add' ? doCreate : doUpdate}
-      />
+      {modalOpen && (
+        <UserModal 
+          key={selected?.id || 'new'}
+          isOpen={modalOpen}
+          mode={modalMode}
+          selected={selected}
+          onClose={closeModal}
+          onSubmit={modalMode === 'add' ? doCreate : doUpdate}
+        />
+      )}
 
       <UserDetailModal 
         isOpen={detailOpen}

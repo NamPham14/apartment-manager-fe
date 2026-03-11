@@ -1,7 +1,10 @@
-import React, { useEffect, useState, useRef } from 'react';
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import React, { useState, useRef, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { X, Save, Loader2, User as UserIcon, Mail, Lock, ShieldCheck, Camera, Phone } from 'lucide-react';
 import { useGetRolesQuery } from '../store/api/roleApi';
+import { userSchema, type UserFormData } from '../schemas/user';
 import type { UserResponse } from '../types/user.type';
 
 interface UserModalProps {
@@ -13,29 +16,34 @@ interface UserModalProps {
 }
 
 export const UserModal: React.FC<UserModalProps> = ({ isOpen, mode, selected, onClose, onSubmit }) => {
-  const { register, handleSubmit, reset, formState: { isSubmitting } } = useForm();
+  const isEdit = mode === 'edit' && !!selected;
+
+  const { register, handleSubmit, setValue, watch, formState: { isSubmitting, errors } } = useForm<UserFormData>({
+    resolver: zodResolver(userSchema),
+    defaultValues: isEdit ? {
+      username: selected.username,
+      email: selected.email,
+      status: selected.status as any,
+      phone: selected.phone || '',
+      password: '',
+      roles: selected.roles.map(r => r.id),
+    } : {
+      username: '',
+      email: '',
+      status: 'ACTIVE',
+      phone: '',
+      password: '',
+      roles: [],
+    }
+  });
+
   const { data: roleData } = useGetRolesQuery({ page: 1, size: 100 });
-  const [selectedRoles, setSelectedRoles] = useState<number[]>([]);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
-  const [preview, setPreview] = useState<string | null>(null);
+  const [preview, setPreview] = useState<string | null>(isEdit ? (selected.avatar || null) : null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const roles = roleData?.data?.data || [];
-
-  useEffect(() => {
-    if (isOpen) {
-      if (mode === 'edit' && selected) {
-        reset({ username: selected.username, email: selected.email, status: selected.status, phone: selected.phone || '' });
-        setSelectedRoles(selected.roles.map(r => r.id));
-        setPreview(selected.avatar || null);
-      } else {
-        reset({ username: '', email: '', password: '', status: 'ACTIVE', phone: '' });
-        setSelectedRoles([]);
-        setPreview(null);
-      }
-      setAvatarFile(null);
-    }
-  }, [isOpen, mode, selected, reset]);
+  const selectedRoles = watch('roles') || [];
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files?.[0]) {
@@ -46,29 +54,33 @@ export const UserModal: React.FC<UserModalProps> = ({ isOpen, mode, selected, on
   };
 
   const toggleRole = (id: number) => {
-    setSelectedRoles(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
-  };
-
-  const onFormSubmit = async (data: any) => {
-    const formData = new FormData();
-    
-    // Đóng gói JSON vào part "data"
-    const payload = {
-      ...data,
-      id: mode === 'edit' ? selected?.id : undefined,
-      roles: selectedRoles
-    };
-    formData.append('data', new Blob([JSON.stringify(payload)], { type: 'application/json' }));
-
-    // Đóng gói file vào part "file"
-    if (avatarFile) {
-      formData.append('file', avatarFile);
-    }
-
-    await onSubmit(formData);
+    const currentRoles = [...selectedRoles];
+    const newRoles = currentRoles.includes(id) 
+      ? currentRoles.filter(i => i !== id) 
+      : [...currentRoles, id];
+    setValue('roles', newRoles, { shouldValidate: true });
   };
 
   if (!isOpen) return null;
+
+  const onFormSubmit = async (data: UserFormData) => {
+    try {
+      const formData = new FormData();
+      const payload = {
+        ...data,
+        id: isEdit ? selected?.id : undefined,
+      };
+      formData.append('data', new Blob([JSON.stringify(payload)], { type: 'application/json' }));
+
+      if (avatarFile) {
+        formData.append('file', avatarFile);
+      }
+
+      await onSubmit(formData);
+    } catch (error) {
+      console.error('Submit user error:', error);
+    }
+  };
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
@@ -107,16 +119,18 @@ export const UserModal: React.FC<UserModalProps> = ({ isOpen, mode, selected, on
             <div className="space-y-1">
               <label className="text-xs font-semibold text-gray-500 uppercase tracking-widest px-1">Username</label>
               <div className="relative">
-                <UserIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 w-4 h-4" />
-                <input {...register('username', { required: true })} className="w-full bg-[#0f0f0f] border border-[#2d2d2d] rounded-xl py-2.5 pl-10 pr-4 text-sm text-white focus:border-[#FF9500] outline-none" />
+                <UserIcon className={`absolute left-3 top-1/2 -translate-y-1/2 ${errors.username ? 'text-red-500' : 'text-gray-500'} w-4 h-4`} />
+                <input {...register('username')} className={`w-full bg-[#0f0f0f] border ${errors.username ? 'border-red-500/50' : 'border-[#2d2d2d]'} rounded-xl py-2.5 pl-10 pr-4 text-sm text-white focus:border-[#FF9500] outline-none transition-colors`} />
               </div>
+              {errors.username && <p className="text-red-500 text-[10px] font-bold uppercase px-1">{errors.username.message}</p>}
             </div>
             <div className="space-y-1">
               <label className="text-xs font-semibold text-gray-500 uppercase tracking-widest px-1">Email Address</label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 w-4 h-4" />
-                <input {...register('email', { required: true })} className="w-full bg-[#0f0f0f] border border-[#2d2d2d] rounded-xl py-2.5 pl-10 pr-4 text-sm text-white focus:border-[#FF9500] outline-none" />
+                <Mail className={`absolute left-3 top-1/2 -translate-y-1/2 ${errors.email ? 'text-red-500' : 'text-gray-500'} w-4 h-4`} />
+                <input {...register('email')} className={`w-full bg-[#0f0f0f] border ${errors.email ? 'border-red-500/50' : 'border-[#2d2d2d]'} rounded-xl py-2.5 pl-10 pr-4 text-sm text-white focus:border-[#FF9500] outline-none transition-colors`} />
               </div>
+              {errors.email && <p className="text-red-500 text-[10px] font-bold uppercase px-1">{errors.email.message}</p>}
             </div>
           </div>
 
@@ -124,9 +138,10 @@ export const UserModal: React.FC<UserModalProps> = ({ isOpen, mode, selected, on
             <div className="space-y-1">
               <label className="text-xs font-semibold text-gray-500 uppercase tracking-widest px-1">Phone Number</label>
               <div className="relative">
-                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 w-4 h-4" />
-                <input {...register('phone')} className="w-full bg-[#0f0f0f] border border-[#2d2d2d] rounded-xl py-2.5 pl-10 pr-4 text-sm text-white focus:border-[#FF9500] outline-none" placeholder="Ex: 0912..." />
+                <Phone className={`absolute left-3 top-1/2 -translate-y-1/2 ${errors.phone ? 'text-red-500' : 'text-gray-500'} w-4 h-4`} />
+                <input {...register('phone')} className={`w-full bg-[#0f0f0f] border ${errors.phone ? 'border-red-500/50' : 'border-[#2d2d2d]'} rounded-xl py-2.5 pl-10 pr-4 text-sm text-white focus:border-[#FF9500] outline-none transition-colors`} placeholder="Ex: 0912..." />
               </div>
+              {errors.phone && <p className="text-red-500 text-[10px] font-bold uppercase px-1">{errors.phone.message}</p>}
             </div>
             <div className="space-y-1">
               <label className="text-xs font-semibold text-gray-500 uppercase tracking-widest px-1">Account Status</label>
@@ -142,15 +157,19 @@ export const UserModal: React.FC<UserModalProps> = ({ isOpen, mode, selected, on
               <div className="space-y-1">
                 <label className="text-xs font-semibold text-gray-500 uppercase tracking-widest px-1">Password</label>
                 <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 w-4 h-4" />
-                  <input type="password" {...register('password', { required: true })} className="w-full bg-[#0f0f0f] border border-[#2d2d2d] rounded-xl py-2.5 pl-10 pr-4 text-sm text-white focus:border-[#FF9500] outline-none" />
+                  <Lock className={`absolute left-3 top-1/2 -translate-y-1/2 ${errors.password ? 'text-red-500' : 'text-gray-500'} w-4 h-4`} />
+                  <input type="password" {...register('password')} className={`w-full bg-[#0f0f0f] border ${errors.password ? 'border-red-500/50' : 'border-[#2d2d2d]'} rounded-xl py-2.5 pl-10 pr-4 text-sm text-white focus:border-[#FF9500] outline-none transition-colors`} />
                 </div>
+                {errors.password && <p className="text-red-500 text-[10px] font-bold uppercase px-1">{errors.password.message}</p>}
               </div>
             )}
           </div>
 
           <div className="space-y-2">
-            <label className="text-xs font-semibold text-gray-500 uppercase tracking-widest px-1">Assign Roles</label>
+            <div className="flex justify-between items-center px-1">
+              <label className="text-xs font-semibold text-gray-500 uppercase tracking-widest">Assign Roles</label>
+              {errors.roles && <p className="text-red-500 text-[10px] font-bold uppercase">{errors.roles.message}</p>}
+            </div>
             <div className="flex flex-wrap gap-2 pr-2">
               {roles.map(r => (
                 <button

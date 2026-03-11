@@ -1,6 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useState, useRef } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { X, Loader2, Camera, User } from 'lucide-react';
+import { tenantSchema, type TenantFormData } from '../schemas/tenant';
 import type { TenantResponse } from '../types/tenant.type';
 
 interface TenantModalProps {
@@ -18,42 +21,29 @@ export const TenantModal: React.FC<TenantModalProps> = ({
   onClose, 
   onSubmit 
 }) => {
-  const [loading, setLoading] = useState(false);
-  const [formData, setFormData] = useState({
-    fullName: '',
-    phone: '',
-    citizenId: '',
-    email: '',
-    permanentAddress: '',
-  });
-  const [avatarFile, setAvatarFile] = useState<File | null>(null);
-  const [preview, setPreview] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const isEdit = mode === 'edit' && !!selected;
 
-  useEffect(() => {
-    if (isOpen) {
-      if (mode === 'edit' && selected) {
-        setFormData({
-          fullName: selected.fullName,
-          phone: selected.phone,
-          citizenId: selected.citizenId,
-          email: selected.email,
-          permanentAddress: selected.permanentAddress,
-        });
-        setPreview(selected.avatar || null);
-      } else {
-        setFormData({
-          fullName: '',
-          phone: '',
-          citizenId: '',
-          email: '',
-          permanentAddress: '',
-        });
-        setPreview(null);
-      }
-      setAvatarFile(null);
+  // 1. Khởi tạo useForm với Zod Resolver
+  const { register, handleSubmit, formState: { isSubmitting, errors } } = useForm<TenantFormData>({
+    resolver: zodResolver(tenantSchema),
+    defaultValues: isEdit ? {
+      fullName: selected.fullName,
+      phone: selected.phone,
+      citizenId: selected.citizenId,
+      email: selected.email || '',
+      permanentAddress: selected.permanentAddress || '',
+    } : {
+      fullName: '',
+      phone: '',
+      citizenId: '',
+      email: '',
+      permanentAddress: '',
     }
-  }, [mode, selected, isOpen]);
+  });
+
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [preview, setPreview] = useState<string | null>(isEdit ? (selected.avatar || null) : null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files?.[0]) {
@@ -65,15 +55,13 @@ export const TenantModal: React.FC<TenantModalProps> = ({
 
   if (!isOpen) return null;
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
+  const onFormSubmit = async (data: TenantFormData) => {
     try {
       const formDataObj = new FormData();
       
       const payload = {
-        ...formData,
-        id: mode === 'edit' ? selected?.id : undefined
+        ...data,
+        id: isEdit ? selected?.id : undefined
       };
       
       formDataObj.append('data', new Blob([JSON.stringify(payload)], { type: 'application/json' }));
@@ -86,16 +74,14 @@ export const TenantModal: React.FC<TenantModalProps> = ({
       onClose();
     } catch (error) {
       console.error('Submit tenant error:', error);
-    } finally {
-      setLoading(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-      <div className="bg-[#0f0f0f] border border-[#2d2d2d] w-full max-w-lg rounded-2xl overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+      <div className="bg-[#0f0f0f] border border-[#2d2d2d] w-full max-w-lg rounded-2xl overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200">
         <div className="p-6 border-b border-[#2d2d2d] flex items-center justify-between">
-          <h2 className="text-xl font-bold text-white">
+          <h2 className="text-xl font-bold text-white tracking-tight">
             {mode === 'add' ? 'Add New Tenant' : 'Edit Tenant Info'}
           </h2>
           <button onClick={onClose} className="text-gray-500 hover:text-white transition-colors">
@@ -103,7 +89,7 @@ export const TenantModal: React.FC<TenantModalProps> = ({
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        <form onSubmit={handleSubmit(onFormSubmit)} className="p-6 space-y-4">
           {/* Avatar Section */}
           <div className="flex flex-col items-center gap-2 mb-2">
             <div className="relative group">
@@ -128,55 +114,50 @@ export const TenantModal: React.FC<TenantModalProps> = ({
 
           <div className="grid grid-cols-1 gap-4">
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-gray-400 uppercase">Full Name</label>
+              <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Full Name</label>
               <input
-                required
-                value={formData.fullName}
-                onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+                {...register('fullName')}
                 placeholder="Ex: Nguyen Van A"
-                className="w-full bg-[#1a1a1a] border border-[#2d2d2d] rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-[#FF9500] transition-colors"
+                className={`w-full bg-[#1a1a1a] border ${errors.fullName ? 'border-red-500/50' : 'border-[#2d2d2d]'} rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-[#FF9500] transition-colors`}
               />
+              {errors.fullName && <p className="text-red-500 text-[10px] font-bold uppercase">{errors.fullName.message}</p>}
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-gray-400 uppercase">Phone Number</label>
+                <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Phone Number</label>
                 <input
-                  required
-                  value={formData.phone}
-                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  {...register('phone')}
                   placeholder="09xx..."
-                  className="w-full bg-[#1a1a1a] border border-[#2d2d2d] rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-[#FF9500] transition-colors"
+                  className={`w-full bg-[#1a1a1a] border ${errors.phone ? 'border-red-500/50' : 'border-[#2d2d2d]'} rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-[#FF9500] transition-colors`}
                 />
+                {errors.phone && <p className="text-red-500 text-[10px] font-bold uppercase">{errors.phone.message}</p>}
               </div>
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-gray-400 uppercase">Citizen ID</label>
+                <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Citizen ID</label>
                 <input
-                  required
-                  value={formData.citizenId}
-                  onChange={(e) => setFormData({ ...formData, citizenId: e.target.value })}
+                  {...register('citizenId')}
                   placeholder="ID Number"
-                  className="w-full bg-[#1a1a1a] border border-[#2d2d2d] rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-[#FF9500] transition-colors"
+                  className={`w-full bg-[#1a1a1a] border ${errors.citizenId ? 'border-red-500/50' : 'border-[#2d2d2d]'} rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-[#FF9500] transition-colors`}
                 />
+                {errors.citizenId && <p className="text-red-500 text-[10px] font-bold uppercase">{errors.citizenId.message}</p>}
               </div>
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-gray-400 uppercase">Email Address</label>
+              <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Email Address</label>
               <input
-                type="email"
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                {...register('email')}
                 placeholder="example@gmail.com"
-                className="w-full bg-[#1a1a1a] border border-[#2d2d2d] rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-[#FF9500] transition-colors"
+                className={`w-full bg-[#1a1a1a] border ${errors.email ? 'border-red-500/50' : 'border-[#2d2d2d]'} rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-[#FF9500] transition-colors`}
               />
+              {errors.email && <p className="text-red-500 text-[10px] font-bold uppercase">{errors.email.message}</p>}
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-gray-400 uppercase">Permanent Address</label>
+              <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Permanent Address</label>
               <textarea
-                value={formData.permanentAddress}
-                onChange={(e) => setFormData({ ...formData, permanentAddress: e.target.value })}
+                {...register('permanentAddress')}
                 placeholder="City, Province, Country..."
                 rows={2}
                 className="w-full bg-[#1a1a1a] border border-[#2d2d2d] rounded-xl px-4 py-2 text-white focus:outline-none focus:border-[#FF9500] transition-colors resize-none text-sm"
@@ -194,10 +175,10 @@ export const TenantModal: React.FC<TenantModalProps> = ({
             </button>
             <button
               type="submit"
-              disabled={loading}
+              disabled={isSubmitting}
               className="flex-[2] bg-[#FF9500] hover:bg-[#e68600] disabled:opacity-50 text-black font-bold py-2.5 rounded-xl transition-all shadow-[0_0_15px_rgba(255,149,0,0.3)] flex items-center justify-center gap-2 text-sm"
             >
-              {loading ? <Loader2 className="animate-spin" size={18} /> : (mode === 'add' ? 'Create Tenant' : 'Save Changes')}
+              {isSubmitting ? <Loader2 className="animate-spin" size={18} /> : (mode === 'add' ? 'Create Tenant' : 'Save Changes')}
             </button>
           </div>
         </form>
