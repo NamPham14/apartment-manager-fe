@@ -4,6 +4,8 @@ import { useForm } from 'react-hook-form';
 import { useGetMyInfoQuery, useUpdateUserMutation, useChangePasswordMutation } from '../store/api/userApi';
 import { User, Mail, Phone, Shield, Camera, Save, Loader2, KeyRound, CheckCircle2 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { profileSchemas, type ProfileFormData } from '../schemas/myProfile';
+import { zodResolver } from '@hookform/resolvers/zod';
 
 export default function ProfilePage() {
   const { data: userData, isLoading, refetch } = useGetMyInfoQuery();
@@ -14,15 +16,23 @@ export default function ProfilePage() {
   const [previewOverride, setPreviewOverride] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const { register: regProfile, handleSubmit: handleProfileSubmit } = useForm({
-    values: userData?.data ? {
-      id: userData.data.id,
-      username: userData.data.username,
-      email: userData.data.email,
-      phone: userData.data.phone,
-      fullName: (userData.data.firstName || '') + (userData.data.lastName || '')
-    } : undefined
+  const { register: regProfile, handleSubmit: handleProfileSubmit ,reset:restProfile ,formState:{errors}} = useForm<ProfileFormData>({
+    resolver:zodResolver(profileSchemas)
   });
+
+  React.useEffect(() => {
+    if(userData?.data) {
+      restProfile({
+      id: userData.data.id,
+      username: userData.data.username || "",
+      email: userData.data.email || "",
+      phone: userData.data.phone ?? "",
+      lastName: userData.data.lastName ?? "",
+      firstName: userData.data.firstName ?? ""
+    });
+    }
+  },[userData,restProfile]);
+
   const { register: regPwd, handleSubmit: handlePwdSubmit, reset: resetPwd } = useForm();
 
   const avatarPreview = previewOverride || userData?.data?.avatar || null;
@@ -139,8 +149,14 @@ export default function ProfilePage() {
             <form onSubmit={handleProfileSubmit(onProfileSubmit)} className="p-8 space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest px-1">Full Name</label>
-                  <input {...regProfile('fullName')} className="w-full bg-[#0f0f0f] border border-[#2d2d2d] rounded-xl py-3 px-4 text-sm focus:outline-none focus:border-[#FF9500] text-white" />
+                  <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest px-1">First Name</label>
+                  <input {...regProfile('firstName')} className={`w-full bg-[#0f0f0f] border border-[#2d2d2d] rounded-xl py-3 px-4 text-sm focus:outline-none focus:border-[#FF9500] text-white  ${errors.firstName ? 'border-red-500' : 'border-[#2d2d2d]'}`} />
+                  {errors.firstName && <p className="text-red-500 text-[10px] mt-1">{errors.firstName?.message}</p>}
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest px-1">Last Name</label>
+                  <input {...regProfile('lastName')} className={`w-full bg-[#0f0f0f] border border-[#2d2d2d] rounded-xl py-3 px-4 text-sm focus:outline-none focus:border-[#FF9500] text-white  ${errors.lastName ? 'border-red-500' : 'border-[#2d2d2d]'}`} />
+                  {errors.lastName && <p className="text-red-500 text-[10px] mt-1">{errors.lastName?.message}</p>}
                 </div>
                 <div className="space-y-1">
                   <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest px-1">Username</label>
@@ -148,11 +164,13 @@ export default function ProfilePage() {
                 </div>
                 <div className="space-y-1">
                   <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest px-1">Email Address</label>
-                  <input {...regProfile('email')} className="w-full bg-[#0f0f0f] border border-[#2d2d2d] rounded-xl py-3 px-4 text-sm focus:outline-none focus:border-[#FF9500] text-white" />
+                  <input {...regProfile('email')} className={`w-full bg-[#0f0f0f] border border-[#2d2d2d] rounded-xl py-3 px-4 text-sm focus:outline-none focus:border-[#FF9500] text-white  ${errors.email ? 'border-red-500' : 'border-[#2d2d2d]'}`} />
+                  {errors.email && <p className="text-red-500 text-[10px] mt-1">{errors.email?.message}</p>}
                 </div>
                 <div className="space-y-1">
                   <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest px-1">Phone Number</label>
-                  <input {...regProfile('phone')} className="w-full bg-[#0f0f0f] border border-[#2d2d2d] rounded-xl py-3 px-4 text-sm focus:outline-none focus:border-[#FF9500] text-white" />
+                  <input {...regProfile('phone')} className={`w-full bg-[#0f0f0f] border border-[#2d2d2d] rounded-xl py-3 px-4 text-sm focus:outline-none focus:border-[#FF9500] text-white  ${errors.phone ? 'border-red-500' : 'border-[#2d2d2d]'}`} />
+                  {errors.phone && <p className="text-red-500 text-[10px] mt-1">{errors.phone?.message}</p>}
                 </div>
               </div>
               <div className="flex justify-end pt-4">

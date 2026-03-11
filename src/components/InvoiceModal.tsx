@@ -2,7 +2,7 @@
 import React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { X, Save, Loader2, DollarSign, Calendar } from 'lucide-react';
+import { X, Save, Loader2, Calendar } from 'lucide-react';
 import { useGetContractsQuery } from '../store/api/contractApi';
 import { invoiceSchema, type InvoiceFormData } from '../schemas/invoice';
 import type { InvoiceResponse } from '../types/invoice.type';
@@ -24,7 +24,7 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({ isOpen, mode, select
       contractId: selected.contract?.id || 0,
       month: selected.month,
       year: selected.year,
-      totalAmount: Number(selected.totalAmount) || 0,
+      totalAmount: Number(selected.amountTotal) || 0,
       status: selected.status as any,
       dueDate: selected.dueDate
     } : { 

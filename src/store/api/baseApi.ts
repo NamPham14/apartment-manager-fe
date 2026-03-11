@@ -80,11 +80,11 @@ const customBaseQuery: BaseQueryFn<
     }
   }
 
-  // Xử lý lỗi 403
-  if (result.error?.status === 403) {
-    // Không nên nhảy cứng sang forbidden ở đây nếu chỉ là một request nhỏ bị từ chối
-    // Tùy nhu cầu bạn có thể giữ hoặc bỏ
-  }
+  // // Xử lý lỗi 403
+  // if (result.error?.status === 403) {
+  //   // Không nên nhảy cứng sang forbidden ở đây nếu chỉ là một request nhỏ bị từ chối
+  //   // Tùy nhu cầu bạn có thể giữ hoặc bỏ
+  // }
 
   return result;
 };

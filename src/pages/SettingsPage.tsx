@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import React, { useEffect } from 'react';
+
 import { useForm } from 'react-hook-form';
 import { useGetSettingsQuery, useUpdateSettingsMutation } from '../store/api/settingApi';
 import { Zap, Droplets, Info, Save, Loader2, Settings, ShieldCheck } from 'lucide-react';

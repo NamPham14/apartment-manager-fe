@@ -1,4 +1,4 @@
-import React from 'react';
+
 import { Plus, Search, Loader2, RefreshCw, FileText, User, Home, Calendar } from 'lucide-react';
 import { DataTable } from '../components/DataTable';
 import { useContracts } from '../hooks/useContracts';

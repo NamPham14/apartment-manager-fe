@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Plus, Search, Loader2, RefreshCw, Gauge, Droplets, Zap, Home, Calendar } from 'lucide-react';
 import { DataTable } from '../components/DataTable';
 import { useMeasurements } from '../hooks/useMeasurements';
@@ -63,7 +63,7 @@ export default function MeasurePage() {
       )
     },
     { 
-      key: 'electricity' as keyof MeasureResponse, 
+      key: 'newElectricityIndex' as keyof MeasureResponse, 
       label: 'Electricity Index',
       render: (item: MeasureResponse) => (
         <div className="flex flex-col">
@@ -76,7 +76,7 @@ export default function MeasurePage() {
       )
     },
     { 
-      key: 'water' as keyof MeasureResponse, 
+      key: 'newWaterIndex' as keyof MeasureResponse, 
       label: 'Water Index',
       render: (item: MeasureResponse) => (
         <div className="flex flex-col">

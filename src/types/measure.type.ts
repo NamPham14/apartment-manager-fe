@@ -12,8 +12,6 @@ export interface MeasureResponse {
   room?: RoomResponse;
   month: number;
   year: number;
-  electricity?: number;
-  water?: number;
   oldElectricityIndex: number;
   newElectricityIndex: number;
   oldWaterIndex: number;

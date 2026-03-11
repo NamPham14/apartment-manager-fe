@@ -56,7 +56,6 @@ const router = createBrowserRouter([
           { path: '/permissions', element: <PermissionPage /> },
           { path: '/settings', element: <SettingsPage /> },
           { path: '/profile', element: <ProfilePage /> },
-          // Redirect mặc định trong app
           { path: '/', element: <Navigate to="/dashboard" replace /> },
         ],
       },

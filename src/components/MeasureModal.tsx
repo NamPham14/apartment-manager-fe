@@ -24,8 +24,8 @@ export const MeasureModal: React.FC<MeasureModalProps> = ({ isOpen, mode, select
       contractId: selected.contractId,
       month: selected.month,
       year: selected.year,
-      electricityIndex: selected.electricity,
-      waterIndex: selected.water,
+      electricityIndex: selected.newElectricityIndex,
+      waterIndex: selected.newWaterIndex,
       recordedDate: selected.recordedDate
     } : { 
       contractId: 0, 
